@@ -3,7 +3,7 @@ import TweenMax from 'gsap';
 
 const material = color =>
 	new THREE.MeshPhongMaterial({
-		color: color,
+		color,
 		side: THREE.DoubleSide,
 		emissive: 0x000000,
 		specular: 0xffffff,
@@ -108,5 +108,5 @@ export default () => {
 			yoyo: true,
 		});
 	}, 1000 + Math.random() * 2000);
-	return group;
+	return { group, nose };
 };

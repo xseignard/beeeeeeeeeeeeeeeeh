@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import TweenMax from 'gsap';
 import threeOrbitControls from './utils/OrbitControls';
 import Stats from 'stats.js';
 import Sheep from './sheep';
+import Particles from './particles';
 import './main.css';
 
 // attach orbit controls to THREE
@@ -56,9 +58,14 @@ scene.add(spotLightHelper2);
 
 // beeeeeeeeeeeeeeeeh
 const sheep = Sheep();
-sheep.position.y = 11.5;
-sheep.rotation.y = -Math.PI / 3;
-scene.add(sheep);
+sheep.group.position.y = 11.5;
+sheep.group.rotation.y = -Math.PI / 3;
+scene.add(sheep.group);
+
+// particles
+const particles = Particles();
+particles.group.position.set(-5, 15, -10);
+scene.add(particles.group);
 
 const planeGeometry = new THREE.PlaneGeometry(150, 150, 32, 32);
 planeGeometry.vertices.forEach(v => {
@@ -76,6 +83,41 @@ const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
 planeMesh.rotation.x = Math.PI / 2;
 planeMesh.receiveShadow = true;
 scene.add(planeMesh);
+
+const handleResize = () => {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize(window.innerWidth, window.innerHeight);
+};
+addEventListener('resize', handleResize);
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const handleClick = e => {
+	e.preventDefault();
+	mouse.x = e.clientX / window.innerWidth * 2 - 1;
+	mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+	raycaster.setFromCamera(mouse, camera);
+	const intersects = raycaster.intersectObjects(sheep.group.children);
+	if (intersects.length > 0 && intersects[0].object.uuid === sheep.nose.uuid) {
+		let i = 0;
+		const interval = setInterval(() => {
+			if (i <= 100) {
+				particles.particles[i].fart();
+				i++;
+			} else clearInterval(interval);
+		}, 10);
+		TweenMax.to(sheep.nose.scale, 0.3, {
+			x: '+=2',
+			y: '+=2',
+			z: '+=2',
+			ease: Power2.easeInOut,
+			repeat: 1,
+			yoyo: true,
+		});
+	}
+};
+addEventListener('click', handleClick);
 
 const animate = timestamp => {
 	stats.begin();
