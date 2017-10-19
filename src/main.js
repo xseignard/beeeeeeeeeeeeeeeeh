@@ -1,13 +1,18 @@
 import * as THREE from 'three';
+import 'three/examples/js/controls/OrbitControls';
+import 'three/examples/js/loaders/OBJLoader';
+import 'three/examples/js/postprocessing/EffectComposer';
+import 'three/examples/js/postprocessing/RenderPass';
+import 'three/examples/js/postprocessing/ShaderPass';
+import 'three/examples/js/shaders/CopyShader';
+import 'three/examples/js/shaders/FilmShader';
 import TweenMax from 'gsap';
-import threeOrbitControls from './utils/OrbitControls';
 import Stats from 'stats.js';
 import Sheep from './sheep';
 import Particles from './particles';
 import './main.css';
-
-// attach orbit controls to THREE
-const OrbitControls = threeOrbitControls(THREE);
+import paperBoatOBJ from './models/test.obj';
+import paperTexture from './img/paper.jpg';
 
 // stats
 const stats = new Stats();
@@ -20,18 +25,19 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 // enbale the drawing of shadows
 renderer.shadowMap.enabled = true;
-
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+// scene.background = new THREE.Color(0xf8ebb8);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 40, 100);
 // controls
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
 // axis helper
 const axisHelper = new THREE.AxisHelper(100);
 scene.add(axisHelper);
 
+// lights
 const light = new THREE.AmbientLight(0x888888);
 scene.add(light);
 
@@ -62,6 +68,35 @@ sheep.group.position.y = 11.5;
 sheep.group.rotation.y = -Math.PI / 3;
 scene.add(sheep.group);
 
+//
+const textureLoader = new THREE.TextureLoader();
+textureLoader.load(paperTexture, texture => {
+	texture.wrapS = THREE.RepeatWrapping;
+	texture.wrapT = THREE.RepeatWrapping;
+	texture.needsUpdate = true;
+	const m = new THREE.MeshPhongMaterial({
+		// color: 0xee0000,
+		side: THREE.DoubleSide,
+		emissive: 0x000000,
+		specular: 0xffffff,
+		flatShading: true,
+		bumpMap: texture,
+		map: texture,
+	});
+	const objLoader = new THREE.OBJLoader();
+	objLoader.load(paperBoatOBJ, object => {
+		object.traverse(node => {
+			if (node.material) node.material = m;
+		});
+		object.rotateX(-90 * THREE.Math.DEG2RAD);
+		object.rotateZ(90 * THREE.Math.DEG2RAD);
+		object.position.set(30, 10, 0);
+		object.scale.set(5, 5, 5);
+		object.castShadow = true;
+		scene.add(object);
+	});
+});
+
 // particles
 const particles = Particles();
 particles.group.position.set(-5, 15, -10);
@@ -88,6 +123,7 @@ const handleResize = () => {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize(window.innerWidth, window.innerHeight);
+	composer.setSize(window.innerWidth, window.innerHeight);
 };
 addEventListener('resize', handleResize);
 
@@ -119,10 +155,22 @@ const handleClick = e => {
 };
 addEventListener('click', handleClick);
 
+// post processing
+const composer = new THREE.EffectComposer(renderer);
+
+const renderPass = new THREE.RenderPass(scene, camera);
+const grainPass = new THREE.ShaderPass(THREE.FilmShader);
+grainPass.renderToScreen = true;
+grainPass.uniforms['grayscale'] = false;
+
+composer.addPass(renderPass);
+composer.addPass(grainPass);
+
 const animate = timestamp => {
-	stats.begin();
-	renderer.render(scene, camera);
-	stats.end();
 	requestAnimationFrame(animate);
+	stats.begin();
+	// renderer.render(scene, camera);
+	composer.render();
+	stats.end();
 };
 animate();

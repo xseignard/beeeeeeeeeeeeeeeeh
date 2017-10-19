@@ -1,6 +1,19 @@
+@font-face {
+	font-family: 'Cheque-Regular';
+	src: url('./font/Cheque-Regular.otf') format('truetype');
+}
 body {
 	margin: 0;
 	padding: 0;
+}
+.title {
+	position: absolute;
+	color: #f8ebb8;
+	right: 0;
+	font-family: 'Cheque-Regular';
+	font-size: 72px;
+	letter-spacing: 12px;
+	font-weight: normal;
 }
 canvas {
 	display: block;
